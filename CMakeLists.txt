@@ -279,6 +279,7 @@ add_subdirectory( plotjuggler_plugins/ToolboxLuaEditor )
 
 add_subdirectory( plotjuggler_plugins/ParserProtobuf )
 add_subdirectory( plotjuggler_plugins/ParserROS )
+add_subdirectory( plotjuggler_plugins/DataLoadAPBin )
 
 # Install targets
 
