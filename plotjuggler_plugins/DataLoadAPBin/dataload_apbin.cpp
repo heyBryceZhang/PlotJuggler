@@ -91,11 +91,29 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
       continue;
     }
     // if we are under the message length remaining, just end
-    if (len - total_bytes_used < format.length)
+    if (total_bytes_used + format.length > len)
     {
-      break;
+      total_bytes_used += 1;
+      continue;
     }
-    //::fprintf(stderr, "Received message of type %u\n", type);
+    else if (total_bytes_used + format.length + 2 <= len)  // it's not the last valid message, check next message header.
+    {
+      if (buf[total_bytes_used + format.length] != HEAD_BYTE1 ||
+          buf[total_bytes_used + format.length + 1] != HEAD_BYTE2)
+      {
+        total_bytes_used += 1;
+        continue;
+      }
+    }
+    else if (total_bytes_used + format.length + 1 == len)
+    {
+      if (buf[total_bytes_used + format.length] != HEAD_BYTE1)
+      {
+        total_bytes_used += 1;
+        continue;
+      }
+    }
+
     handle_message_received(format, &buf[total_bytes_used]);
     total_bytes_used += format.length;
     const auto tempProgress = static_cast<int>((static_cast<double>(total_bytes_used) / static_cast<double>(file_size)) * 100.0);
@@ -118,6 +136,7 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
 
       for (size_t i = 0; i < data.second.size(); i++)
       {
+
         const double msg_time = static_cast<double>(timeseries.timestamps[i]) * 0.000001;
         PlotData::Point point(msg_time, data.second[i]);
         series->second.pushBack(point);
@@ -149,6 +168,7 @@ void DataLoadAPBIN::handle_message_received(const struct log_Format& format, con
     // memory for each message.
     ts_it = _timeseries_map.insert({ fname, createTimeseries(format) }).first;
   }
+
   Timeseries& timeseries = ts_it->second;
   uint32_t msg_offset = 3;  // discard header
   // get the timestamps that is assumed to be the first field // TODO: correct that
