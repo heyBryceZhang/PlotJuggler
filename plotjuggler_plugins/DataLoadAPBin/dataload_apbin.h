@@ -44,7 +44,7 @@ private:
   // for each timestamps, there is a list of values paired with their labels
   struct Timeseries
   {
-    std::vector<uint64_t> timestamps;
+    std::vector<double> timestamps;
     std::vector<std::pair<std::string, std::vector<double>>> data;
   };
 

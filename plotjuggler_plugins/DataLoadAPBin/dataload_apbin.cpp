@@ -85,11 +85,15 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
     const struct log_Format& format = formats[type];
     // discard some messages that aren't numbers : PARAM (64), MSG (91), UNITS (177), MULTI (178)
     // remove unknown format
-    if (format.type == 64 || format.type == 91 || format.type == 177 || format.type == 178 || format.length == 0)
+    if (format.type == LOG_FORMAT_MSG || format.type == LOG_PARAMETER_MSG ||
+        format.type == LOG_FORMAT_UNITS_MSG || format.type == LOG_UNIT_MSG ||
+        format.type == LOG_MULT_MSG || format.type == LOG_MESSAGE_MSG ||
+        format.type == LOG_EVENT_MSG)
     {
-      total_bytes_used += 1;
+      total_bytes_used += format.length;
       continue;
     }
+
     // if we are under the message length remaining, just end
     if (total_bytes_used + format.length > len)
     {
@@ -116,10 +120,15 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
 
     handle_message_received(format, &buf[total_bytes_used]);
     total_bytes_used += format.length;
+
     const auto tempProgress = static_cast<int>((static_cast<double>(total_bytes_used) / static_cast<double>(file_size)) * 100.0);
-    // update the progression dialog box
-    progress_dialog.setValue(tempProgress);
-    QApplication::processEvents();
+    if (tempProgress != progress_dialog.value())
+    {
+      // update the progression dialog box
+      progress_dialog.setValue(tempProgress);
+      QApplication::processEvents();
+    }
+
   }
 
   // convert from timeserie to plotjuggler plot format
@@ -136,9 +145,7 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
 
       for (size_t i = 0; i < data.second.size(); i++)
       {
-
-        const double msg_time = static_cast<double>(timeseries.timestamps[i]) * 0.000001;
-        PlotData::Point point(msg_time, data.second[i]);
+        PlotData::Point point(timeseries.timestamps[i], data.second[i]);
         series->second.pushBack(point);
       }
     }
@@ -174,7 +181,8 @@ void DataLoadAPBIN::handle_message_received(const struct log_Format& format, con
   // get the timestamps that is assumed to be the first field // TODO: correct that
   uint64_t msg_time{ 0 };
   memcpy(&msg_time, &msg[msg_offset], sizeof(uint64_t));
-  timeseries.timestamps.push_back(msg_time);
+
+  timeseries.timestamps.push_back(static_cast<double>(msg_time)*0.000001f);
 
   double value{ 0 };
   // for each label, we get the data according to the format length
