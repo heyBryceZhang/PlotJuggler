@@ -1321,7 +1321,7 @@ void MainWindow::importPlotDataMap(PlotDataMapRef& new_data, bool remove_old)
   auto [added_curves, curve_updated, data_pushed] =
       MoveData(new_data, _mapped_plot_data, remove_old);
 
-  for (const auto& added_curve : added_curves)
+  for (const auto& added_curve : added_curves) // spend much time on here
   {
     _curvelist_widget->addCurve(added_curve);
   }
@@ -1342,8 +1342,8 @@ bool MainWindow::loadDataFromFiles(QStringList filenames)
   filenames.sort();
   std::map<QString, QString> filename_prefix;
 
-  if (filenames.size() > 1)
-  {
+  //if (filenames.size() > 1)
+  //
     DialogMultifilePrefix dialog(filenames, this);
     int ret = dialog.exec();
     if (ret != QDialog::Accepted)
@@ -1351,7 +1351,7 @@ bool MainWindow::loadDataFromFiles(QStringList filenames)
       return false;
     }
     filename_prefix = dialog.getPrefixes();
-  }
+    //}
 
   std::unordered_set<std::string> previous_names = _mapped_plot_data.getAllNames();
 

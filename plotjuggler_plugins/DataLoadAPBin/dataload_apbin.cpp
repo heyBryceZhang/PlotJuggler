@@ -130,6 +130,7 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
     }
 
   }
+  progress_dialog.setValue(100);
 
   // convert from timeserie to plotjuggler plot format
   for (const auto& it : _timeseries_map)
