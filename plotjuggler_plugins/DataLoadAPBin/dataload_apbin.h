@@ -54,8 +54,9 @@ private:
   struct log_Format formats[MAX_FORMATS] = {};
 
   // fill the Timeseries for a message according to the message format
-  void handle_message_received(const struct log_Format& format, const uint8_t* msg);
+  void handle_message_received(const struct log_Format& format, const uint8_t* msg,
+                               std::map<std::string, Timeseries>& _timeseries_map);
   // create the Timeseries structure for a message time and add it the the map
   static Timeseries createTimeseries(const struct log_Format& format);
-  std::map<std::string, Timeseries> _timeseries_map;
+
 };

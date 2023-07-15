@@ -35,6 +35,8 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
   progress_dialog.setAutoReset(true);
   progress_dialog.show();
 
+  std::map<std::string, Timeseries> _timeseries_map;
+
   const uint8_t* buf = reinterpret_cast<const uint8_t*>(file_array.data());
   const uint32_t len = file_array.size();
   uint32_t total_bytes_used = 0;
@@ -118,7 +120,7 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
       }
     }
 
-    handle_message_received(format, &buf[total_bytes_used]);
+    handle_message_received(format, &buf[total_bytes_used], _timeseries_map);
     total_bytes_used += format.length;
 
     const auto tempProgress = static_cast<int>((static_cast<double>(total_bytes_used) / static_cast<double>(file_size)) * 100.0);
@@ -157,7 +159,9 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
   return true;
 }
 
-void DataLoadAPBIN::handle_message_received(const struct log_Format& format, const uint8_t* msg)
+void DataLoadAPBIN::handle_message_received(
+    const struct log_Format& format, const uint8_t* msg,
+    std::map<std::string, Timeseries> &_timeseries_map)
 {
   uint8_t name_lenght = 0;
   for (char i : format.name)
