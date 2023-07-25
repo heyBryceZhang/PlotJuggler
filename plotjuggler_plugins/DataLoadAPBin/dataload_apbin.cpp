@@ -85,6 +85,13 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
     }
     // get the full log format from the message type
     const struct log_Format& format = formats[type];
+
+    if (format.length == 0)
+    {
+      total_bytes_used++;
+      continue;
+    }
+
     // discard some messages that aren't numbers : PARAM (64), MSG (91), UNITS (177), MULTI (178)
     // remove unknown format
     if (format.type == LOG_FORMAT_MSG || format.type == LOG_PARAMETER_MSG ||
