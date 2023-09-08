@@ -42,7 +42,7 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
   uint32_t total_bytes_used = 0;
   while (true)
   {
-    if (len - total_bytes_used < 3)  // less that the smallest so we end
+    if (len - total_bytes_used < 4)  // less that the smallest so we end
     {
       break;
     }
@@ -54,7 +54,8 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
       continue;
     }
     // get the message type
-    const uint8_t type = buf[total_bytes_used + 2];
+    uint16_t type = 0;
+    memcpy((void*)&type, (void*)&buf[total_bytes_used + 2], 2);
 
     if (type == LOG_FORMAT_MSG)
     {
@@ -65,7 +66,13 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
         break;
       }
       // extract the FMT type
-      const uint8_t defining_type = ((struct log_Format*)(&(buf[total_bytes_used])))->type;
+      const uint16_t defining_type = ((struct log_Format*)(&(buf[total_bytes_used])))->type;
+
+      /* if ()
+      {
+        type_list.push_back(defining_type);
+      }*/
+
       struct log_Format& f = formats[defining_type];
       memcpy(&f, &buf[total_bytes_used], sizeof(struct log_Format));
       for (char i : f.name)
@@ -101,6 +108,12 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
     {
       total_bytes_used += format.length;
       continue;
+    }
+
+    uint8_t aaa_ddd = 0;
+    if (type == 0)
+    {
+      aaa_ddd++;
     }
 
     // if we are under the message length remaining, just end
@@ -189,7 +202,8 @@ void DataLoadAPBIN::handle_message_received(
   }
 
   Timeseries& timeseries = ts_it->second;
-  uint32_t msg_offset = 3;  // discard header
+  // uint32_t msg_offset = 3;  // discard header
+    uint32_t msg_offset = 4;
   // get the timestamps that is assumed to be the first field // TODO: correct that
   uint64_t msg_time{ 0 };
   memcpy(&msg_time, &msg[msg_offset], sizeof(uint64_t));

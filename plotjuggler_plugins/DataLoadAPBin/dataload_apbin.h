@@ -50,7 +50,10 @@ private:
 
   std::vector<const char*> _extensions;
 
-  static constexpr uint16_t MAX_FORMATS = 256;
+  std::vector<uint16_t> type_list;
+
+  // static constexpr uint16_t MAX_FORMATS = 256;
+  static constexpr uint16_t MAX_FORMATS = 65535;
   struct log_Format formats[MAX_FORMATS] = {};
 
   // fill the Timeseries for a message according to the message format

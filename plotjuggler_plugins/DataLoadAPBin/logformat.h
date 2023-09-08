@@ -29,6 +29,8 @@ static constexpr uint8_t MAX_LABELS_SIZE = 64;
 /*
   log structures common to all vehicle types
  */
+
+#if 0
 struct PACKED log_Format {
   LOG_PACKET_HEADER
   uint8_t type;
@@ -37,3 +39,19 @@ struct PACKED log_Format {
   char format[MAX_LOGFORMAT_FORMAT];
   char labels[MAX_LABELS_SIZE];
 };
+
+#else 
+
+struct PACKED log_Format
+{
+  uint8_t head1;
+  uint8_t head2;
+  uint16_t msgid;
+  uint16_t type;
+  uint16_t length;
+  char name[48];
+  char format[16];
+  char labels[64];
+};
+
+#endif
