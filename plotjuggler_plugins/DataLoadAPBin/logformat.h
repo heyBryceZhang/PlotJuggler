@@ -24,8 +24,9 @@ enum LOG_TYPE_ID_t
   LOG_EVENT_MSG = 235,
 };
 
-static constexpr uint8_t MAX_LOGFORMAT_FORMAT = 16;
-static constexpr uint8_t MAX_LABELS_SIZE = 64;
+static constexpr uint8_t MAX_NAME_SIZE        = 10;
+static constexpr uint8_t MAX_LOGFORMAT_FORMAT = 20;
+static constexpr uint8_t MAX_LABELS_SIZE      = 140;
 /*
   log structures common to all vehicle types
  */
@@ -33,7 +34,7 @@ struct PACKED log_Format {
   LOG_PACKET_HEADER
   uint8_t type;
   uint8_t length;
-  char name[4];
+  char name[MAX_NAME_SIZE];
   char format[MAX_LOGFORMAT_FORMAT];
   char labels[MAX_LABELS_SIZE];
 };

@@ -241,11 +241,14 @@
           </item>
           <item>
            <widget class="QCheckBox" name="checkBoxAutoZoomVisibility">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
             <property name="text">
              <string>Curve visibility toggled (in curves legend)</string>
             </property>
             <property name="checked">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
            </widget>
           </item>
@@ -258,7 +261,7 @@
              <string>Filters applied to curves</string>
             </property>
             <property name="checked">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
            </widget>
           </item>

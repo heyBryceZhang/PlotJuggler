@@ -170,16 +170,16 @@ void DataLoadAPBIN::handle_message_received(
     const struct log_Format& format, const uint8_t* msg,
     std::map<std::string, Timeseries> &_timeseries_map)
 {
-  uint8_t name_lenght = 0;
+  uint8_t name_length = 0;
   for (char i : format.name)
   {
     if (i != '\0')
     {
       // schrödinger's name ... it can have null termination or not
-      name_lenght++;
+      name_length++;
     }
   }
-  std::string fname(format.name, name_lenght);
+  std::string fname(format.name, name_length);
   // get the timeseries map or create if it doesn't exist
   auto ts_it = _timeseries_map.find(fname);
   if (ts_it == _timeseries_map.end())
