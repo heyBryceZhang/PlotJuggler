@@ -4,11 +4,56 @@
 #include <QProgressDialog>
 #include <QDateTime>
 #include <QInputDialog>
+#include <QTabBar>
 
 DataLoadAPBIN::DataLoadAPBIN()
 {
+  _window = new QMainWindow();
+  _ui = new Ui::APBinLog();
+  _ui->setupUi(_window);
+
+  _window->setWindowTitle("LogPrinter");
+
+
+    QObject::connect(_ui->tabWidget, &QTabWidget::tabCloseRequested, [&](int index) {
+    QWidget* widgetToRemove = _ui->tabWidget->widget(index);
+    _ui->tabWidget->removeTab(index);
+    delete widgetToRemove;
+    });
+
+    _ui->tabWidget->setTabsClosable(true);
+    _ui->tabWidget->setMovable(true);
+
+    connect(_ui->tabWidget->tabBar(), &QTabBar::tabBarDoubleClicked, this,
+            &DataLoadAPBIN::on_renameCurrentTab);
+
+  tab_count = 0;
+
   _extensions.push_back("BIN");  // TODO : this doesn't work for now as tolower() is hardcoded.
 }
+
+DataLoadAPBIN::~DataLoadAPBIN() 
+{
+  delete _window;
+  delete _ui;
+
+}
+
+void DataLoadAPBIN::on_renameCurrentTab()
+{
+  int idx = _ui->tabWidget->tabBar()->currentIndex();
+
+  bool ok = true;
+  QString newName =
+      QInputDialog::getText(_ui->tabWidget, tr("Change name"), tr("New name:"),
+                            QLineEdit::Normal, _ui->tabWidget->tabText(idx), &ok);
+  if (ok)
+  {
+    _ui->tabWidget->setTabText(idx, newName);
+  }
+}
+
+
 
 const std::vector<const char*>& DataLoadAPBIN::compatibleFileExtensions() const
 {
@@ -22,6 +67,24 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
   {
     return false;
   }
+
+  _window->show();
+
+  QDateTime current_date_time = QDateTime::currentDateTime();
+  QString current_date = current_date_time.toString("yyyy.MM.dd hh:mm:ss.zzz ddd");
+
+ 
+  auto newTab = new LogWidget(_ui->tabWidget);
+  QString tabName = "Tab" + QString::number(++tab_count);
+  _ui->tabWidget->addTab(newTab, tabName);
+  _ui->tabWidget->setCurrentWidget(newTab);
+
+
+  auto current_text = newTab->getTextEdit();
+  current_text->setAcceptRichText(false);
+  current_text->moveCursor(QTextCursor::End);
+  current_text->append("[" + current_date + "]   ");
+  current_text->insertPlainText("Parsing log: " + info->filename + ";");
 
   const QByteArray file_array = file.readAll();
   const int32_t file_size = file_array.size();
@@ -40,6 +103,7 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
   const uint8_t* buf = reinterpret_cast<const uint8_t*>(file_array.data());
   const uint32_t len = file_array.size();
   uint32_t total_bytes_used = 0;
+
   while (true)
   {
     if (len - total_bytes_used < 3)  // less that the smallest so we end
@@ -94,10 +158,9 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
 
     // discard some messages that aren't numbers : PARAM (64), MSG (91), UNITS (177), MULTI (178)
     // remove unknown format
-    if (format.type == LOG_FORMAT_MSG || format.type == LOG_PARAMETER_MSG ||
-        format.type == LOG_FORMAT_UNITS_MSG || format.type == LOG_UNIT_MSG ||
-        format.type == LOG_MULT_MSG || format.type == LOG_MESSAGE_MSG ||
-        format.type == LOG_EVENT_MSG)
+
+    if (format.type == LOG_FORMAT_MSG  || format.type == LOG_FORMAT_UNITS_MSG ||
+        format.type == LOG_UNIT_MSG || format.type == LOG_MULT_MSG )
     {
       total_bytes_used += format.length;
       continue;
@@ -127,8 +190,21 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
       }
     }
 
-    handle_message_received(format, &buf[total_bytes_used], _timeseries_map);
-    total_bytes_used += format.length;
+    if (format.type == LOG_PARAMETER_MSG || format.type == LOG_MESSAGE_MSG)
+    {
+      handle_log_text(format, &buf[total_bytes_used], current_text);
+      total_bytes_used += format.length;
+      continue;
+    }
+    else
+    {
+      handle_message_received(format, &buf[total_bytes_used], _timeseries_map);
+      total_bytes_used += format.length;
+    }
+
+
+
+
 
     const auto tempProgress = static_cast<int>((static_cast<double>(total_bytes_used) / static_cast<double>(file_size)) * 100.0);
     if (tempProgress != progress_dialog.value())
@@ -161,10 +237,86 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
     }
   }
 
+ // current_text->moveCursor(QTextCursor::End);
+  current_text->append("  ");
+  current_text->append("  ");
+  current_text->append("  ");
+  current_text->append("  ");
+  current_text->append("  ");
+
   file.close();
 
   return true;
 }
+
+
+void DataLoadAPBIN::handle_log_text(
+    const struct log_Format& format, const uint8_t* msg, QTextEdit* current_text)
+{
+  uint32_t msg_offset = 3;  // discard header
+  uint64_t msg_time{ 0 };
+  memcpy(&msg_time, &msg[msg_offset], sizeof(uint64_t));
+  msg_offset += sizeof(msg_time);
+
+  double log_time = static_cast<double>(msg_time) * 0.000001f;
+
+  if (format.type == LOG_MESSAGE_MSG)
+  {
+    char data[64];
+    memcpy(&data, &msg[msg_offset], sizeof(data));
+
+    QString str_data;
+    str_data.clear();
+    str_data = QString("[%1]").arg(log_time, 0, 'f', 4);
+    uint8_t data_len = 0;
+    for (char i : data)
+    {
+      if (i == '\0')
+      {
+        break;
+      }
+      data_len++;
+    }
+
+    str_data += QString::fromUtf8(data, data_len);
+    current_text->append(str_data);
+
+  }
+  else if (format.type == LOG_PARAMETER_MSG)
+  {
+    char name[16];
+   
+    memcpy(&name, &msg[msg_offset], sizeof(name));
+    msg_offset += sizeof(name);
+
+    float value;
+    value = static_cast<double>(*reinterpret_cast<const float*>(msg + msg_offset));
+
+    QString str_data;
+    str_data.clear();
+
+    uint8_t name_len = 0;
+
+    for (char i : name)
+    {
+      if (i == '\0')
+      {
+        break;
+      }
+      name_len++;
+    }
+
+    str_data = QString("[%1]").arg(log_time, 0, 'f', 4);
+    str_data += QString::fromUtf8(name, name_len);
+    str_data += " = " + QString("%1").arg(value, 0, 'f', 3);
+
+    current_text->append(str_data);
+  
+  }
+
+}
+
+
 
 void DataLoadAPBIN::handle_message_received(
     const struct log_Format& format, const uint8_t* msg,

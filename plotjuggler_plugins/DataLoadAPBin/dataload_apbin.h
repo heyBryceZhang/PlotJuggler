@@ -16,6 +16,10 @@
 #include <QtPlugin>
 #include "PlotJuggler/dataloader_base.h"
 #include "logformat.h"
+#include <QMainWindow>
+#include "ui_apbinlog.h"
+#include "logwidget.h"
+#include <QTabWidget>
 
 using namespace PJ;
 
@@ -31,7 +35,7 @@ public:
 
   bool readDataFromFile(PJ::FileLoadInfo* fileload_info, PlotDataMapRef& destination) override;
 
-  ~DataLoadAPBIN() override = default;
+  ~DataLoadAPBIN() override;
 
   virtual const char* name() const override
   {
@@ -42,6 +46,13 @@ protected:
 private:
   // Timeseries is a struct that hold the data of a message type
   // for each timestamps, there is a list of values paired with their labels
+
+   QMainWindow* _window;
+   Ui::APBinLog* _ui;
+
+   uint8_t tab_count;
+
+
   struct Timeseries
   {
     std::vector<double> timestamps;
@@ -56,6 +67,11 @@ private:
   // fill the Timeseries for a message according to the message format
   void handle_message_received(const struct log_Format& format, const uint8_t* msg,
                                std::map<std::string, Timeseries>& _timeseries_map);
+
+  void handle_log_text(const struct log_Format& format, const uint8_t* msg, QTextEdit* current_text);
+
+  void on_renameCurrentTab();
+
   // create the Timeseries structure for a message time and add it the the map
   static Timeseries createTimeseries(const struct log_Format& format);
 
