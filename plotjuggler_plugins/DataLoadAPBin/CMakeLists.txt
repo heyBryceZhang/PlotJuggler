@@ -8,13 +8,16 @@ add_definitions(-DQT_PLUGIN)
 message(STATUS "find DataLoadAPBin")
 
 
-
+QT5_WRAP_UI ( UI_SRC
+    apbinlog.ui)
 
 
 add_library(DataAPBin SHARED
     dataload_apbin.cpp
     dataload_apbin.h
-    logformat.h)
+    logwidget.h
+    logformat.h
+     ${UI_SRC})
 
 target_link_libraries(DataAPBin
     plotjuggler_base
@@ -25,5 +28,3 @@ install(
         DataAPBin
     DESTINATION
         ${PJ_PLUGIN_INSTALL_DIRECTORY}  )
-
-
