@@ -21,7 +21,6 @@ enum LOG_TYPE_ID_t
   LOG_UNIT_MSG = 207,
   LOG_MULT_MSG = 208,
   LOG_MESSAGE_MSG = 134,
-  LOG_EVENT_MSG = 235,
 };
 
 static constexpr uint8_t MAX_NAME_SIZE        = 10;
