@@ -60,6 +60,34 @@ const std::vector<const char*>& DataLoadAPBIN::compatibleFileExtensions() const
   return _extensions;
 }
 
+bool DataLoadAPBIN::isReplay(const char* name)
+{
+  const char relay_list[][5] = {"RFRH", "RFRF", "RFRN", "REV2", "RSO2", "RWA2", "REV3",
+                                "RSO3", "RWA3", "REY3", "RISH", "RISI", "RASH", "RASI",
+                                "RBRH", "RBRI", "RRNH", "RRNI", "RGPH", "RGPI", "RGPJ",
+                                "RMGH", "RMGI", "RBCH", "RBCI", "RVOH", "ROFH", "REPH",
+                                "REVH", "RWOH", "RBOH" };
+
+    const int list_size = sizeof(relay_list) / sizeof(relay_list[0]);
+
+      // 构造临时字符串（手动添加终止符）
+      char tmp[5];
+      memcpy(tmp, name, 4);
+      tmp[4] = '\0';
+
+      for (int i = 0; i < list_size; ++i)
+      {
+        if (strcmp(tmp, relay_list[i]) == 0)
+        {
+          return true;
+        }
+      }
+      return false;
+
+}
+
+
+
 bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_data)
 {
   QFile file(info->filename);
@@ -160,10 +188,16 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
     // remove unknown format
 
     if (format.type == LOG_FORMAT_MSG  || format.type == LOG_FORMAT_UNITS_MSG ||
-        format.type == LOG_UNIT_MSG || format.type == LOG_MULT_MSG )
+        format.type == LOG_UNIT_MSG || format.type == LOG_MULT_MSG)
     {
       total_bytes_used += format.length;
       continue;
+    }
+
+    /* do not parse REPLAY log */
+    if (isReplay(format.name)) 
+    {
+      total_bytes_used++;
     }
 
     // if we are under the message length remaining, just end
@@ -189,10 +223,23 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
         continue;
       }
     }
+    uint8_t text_type = text_type_t::NONE;
 
-    if (format.type == LOG_PARAMETER_MSG || format.type == LOG_MESSAGE_MSG)
+    if (format.name[0] == 'M' && format.name[1] == 'S' && format.name[2] == 'G' &&
+        format.name[3] == '\0')
     {
-      handle_log_text(format, &buf[total_bytes_used], current_text);
+      text_type = text_type_t::AP_MSG;
+    }
+    else if (format.name[0] == 'P' && format.name[1] == 'A' && format.name[2] == 'R' &&
+             format.name[3] == 'M')
+    {
+      text_type = text_type_t::AP_PARM;
+    }
+
+
+    if (text_type)
+    {
+      handle_log_text(format, &buf[total_bytes_used], current_text, text_type);
       total_bytes_used += format.length;
       continue;
     }
@@ -251,7 +298,7 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
 
 
 void DataLoadAPBIN::handle_log_text(
-    const struct log_Format& format, const uint8_t* msg, QTextEdit* current_text)
+    const struct log_Format& format, const uint8_t* msg, QTextEdit* current_text, uint8_t text_type)
 {
   uint32_t msg_offset = 3;  // discard header
   uint64_t msg_time{ 0 };
@@ -260,7 +307,7 @@ void DataLoadAPBIN::handle_log_text(
 
   double log_time = static_cast<double>(msg_time) * 0.000001f;
 
-  if (format.type == LOG_MESSAGE_MSG)
+  if (text_type == text_type_t::AP_MSG)
   {
     char data[64];
     memcpy(&data, &msg[msg_offset], sizeof(data));
@@ -282,7 +329,7 @@ void DataLoadAPBIN::handle_log_text(
     current_text->append(str_data);
 
   }
-  else if (format.type == LOG_PARAMETER_MSG)
+  else if (text_type == text_type_t::AP_PARM)
   {
     char name[16];
    

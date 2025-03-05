@@ -53,6 +53,9 @@ private:
    uint8_t tab_count;
 
 
+
+
+
   struct Timeseries
   {
     std::vector<double> timestamps;
@@ -68,9 +71,11 @@ private:
   void handle_message_received(const struct log_Format& format, const uint8_t* msg,
                                std::map<std::string, Timeseries>& _timeseries_map);
 
-  void handle_log_text(const struct log_Format& format, const uint8_t* msg, QTextEdit* current_text);
+  void handle_log_text(const struct log_Format& format, const uint8_t* msg, QTextEdit* current_text, uint8_t text_type);
 
   void on_renameCurrentTab();
+
+  bool isReplay(const char* name);
 
   // create the Timeseries structure for a message time and add it the the map
   static Timeseries createTimeseries(const struct log_Format& format);
