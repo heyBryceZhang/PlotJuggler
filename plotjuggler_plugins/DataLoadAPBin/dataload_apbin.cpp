@@ -237,6 +237,7 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
     }
 
 
+
     if (text_type)
     {
       handle_log_text(format, &buf[total_bytes_used], current_text, text_type);
@@ -378,7 +379,16 @@ void DataLoadAPBIN::handle_message_received(
       name_lenght++;
     }
   }
-  std::string fname(format.name, name_lenght);
+  
+  // get package name
+   std::string fname(format.name, name_lenght);
+  /*  adjust package name through core index reprenseted by 'C' value */
+  if (format.labels[6] == ',' && format.labels[7] == 'C' && format.labels[8] == ',')
+  {
+    uint8_t data = msg[3 + sizeof(uint64_t)];
+    fname = (std::string(format.name, name_lenght) + "/" + std::to_string(data)).c_str();
+  }
+
   // get the timeseries map or create if it doesn't exist
   auto ts_it = _timeseries_map.find(fname);
   if (ts_it == _timeseries_map.end())
