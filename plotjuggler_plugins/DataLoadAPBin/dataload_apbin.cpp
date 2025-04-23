@@ -117,9 +117,11 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
       total_bytes_used += 1;
       continue;
     }
+
+
     // get the message type
-    uint16_t type = 0;
-    memcpy((void*)&type, (void*)&buf[total_bytes_used + 2], 2);
+    uint16_t type = 0; // msg id
+    memcpy((void*)&type, (void*)&buf[total_bytes_used + 2], 2); 
 
     if (type == LOG_FORMAT_MSG)
     {
@@ -266,7 +268,7 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
 void DataLoadAPBIN::handle_log_text(
     const struct log_Format& format, const uint8_t* msg, QTextEdit* current_text)
 {
-  uint32_t msg_offset = 3;  // discard header
+  uint32_t msg_offset = 4;  // discard header
   uint64_t msg_time{ 0 };
   memcpy(&msg_time, &msg[msg_offset], sizeof(uint64_t));
   msg_offset += sizeof(msg_time);
