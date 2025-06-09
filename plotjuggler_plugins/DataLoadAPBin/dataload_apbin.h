@@ -66,7 +66,6 @@ private:
 
   static constexpr uint16_t MAX_FORMATS = 256;
   struct log_Format formats[MAX_FORMATS] = {};
-
   // fill the Timeseries for a message according to the message format
   void handle_message_received(const struct log_Format& format, const uint8_t* msg,
                                std::map<std::string, Timeseries>& _timeseries_map);

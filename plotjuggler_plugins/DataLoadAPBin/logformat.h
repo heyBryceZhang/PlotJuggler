@@ -15,10 +15,10 @@ static constexpr uint8_t HEAD_BYTE2 = 0x95;    // Decimal 149
 
 enum LOG_TYPE_ID_t
 {
+  LOG_FORMAT_UNITS_MSG = 116,
+  LOG_UNIT_MSG = 117,
+  LOG_MULT_MSG = 118,
   LOG_FORMAT_MSG = 128,  // this must remain #128
-  LOG_FORMAT_UNITS_MSG = 206,
-  LOG_UNIT_MSG = 207,
-  LOG_MULT_MSG = 208,
 };
 
 enum text_type_t
@@ -31,6 +31,8 @@ enum text_type_t
 
 static constexpr uint8_t MAX_LOGFORMAT_FORMAT = 16;
 static constexpr uint8_t MAX_LABELS_SIZE = 64;
+
+
 /*
   log structures common to all vehicle types
  */

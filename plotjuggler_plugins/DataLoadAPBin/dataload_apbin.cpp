@@ -62,27 +62,22 @@ const std::vector<const char*>& DataLoadAPBIN::compatibleFileExtensions() const
 
 bool DataLoadAPBIN::isReplay(const char* name)
 {
-  const char relay_list[][5] = {"RFRH", "RFRF", "RFRN", "REV2", "RSO2", "RWA2", "REV3",
-                                "RSO3", "RWA3", "REY3", "RISH", "RISI", "RASH", "RASI",
-                                "RBRH", "RBRI", "RRNH", "RRNI", "RGPH", "RGPI", "RGPJ",
-                                "RMGH", "RMGI", "RBCH", "RBCI", "RVOH", "ROFH", "REPH",
-                                "REVH", "RWOH", "RBOH" };
+  static const char* const replay_List[] = { "RFRH", "RFRF", "RFRN", "REV2", "RSO2", "RWA2",
+                                         "REV3", "RSO3", "RWA3", "REY3", "RISH", "RISI",
+                                         "RASH", "RASI", "RBRH", "RBRI", "RRNH", "RRNI",
+                                         "RGPH", "RGPI", "RGPJ", "RMGH", "RMGI", "RBCH",
+                                         "RBCI", "RVOH", "ROFH", "REPH", "REVH", "RWOH",
+                                         "RBOH" };
+  const size_t listSize = sizeof(replay_List) / sizeof(replay_List[0]);
 
-    const int list_size = sizeof(relay_list) / sizeof(relay_list[0]);
-
-      // 构造临时字符串（手动添加终止符）
-      char tmp[5];
-      memcpy(tmp, name, 4);
-      tmp[4] = '\0';
-
-      for (int i = 0; i < list_size; ++i)
-      {
-        if (strcmp(tmp, relay_list[i]) == 0)
-        {
-          return true;
-        }
-      }
-      return false;
+  for (uint8_t cnt = 0; cnt < listSize; ++cnt)
+  {
+    if (std::memcmp(name, replay_List[cnt], 4) == 0)
+    {
+      return true;
+    }
+  }
+  return false;
 
 }
 
@@ -150,7 +145,6 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
 
     if (type == LOG_FORMAT_MSG)
     {
-      //::fprintf(stderr, "Found LOG_FORMAT_MESSAGE\n");
       // check if we don't reach the end
       if ((uint32_t)(len - total_bytes_used) < sizeof(struct log_Format))
       {
@@ -175,6 +169,7 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
       total_bytes_used += sizeof(struct log_Format);
       continue;
     }
+
     // get the full log format from the message type
     const struct log_Format& format = formats[type];
 
@@ -235,8 +230,6 @@ bool DataLoadAPBIN::readDataFromFile(FileLoadInfo* info, PlotDataMapRef& plot_da
     {
       text_type = text_type_t::AP_PARM;
     }
-
-
 
     if (text_type)
     {
@@ -382,8 +375,10 @@ void DataLoadAPBIN::handle_message_received(
   
   // get package name
    std::string fname(format.name, name_lenght);
+
   /*  adjust package name through core index reprenseted by 'C' value */
-  if (format.labels[6] == ',' && format.labels[7] == 'C' && format.labels[8] == ',')
+   if (strncmp(format.labels + 6, ",C,", 3) == 0 ||
+       strncmp(format.labels + 6, ",Instance,", 10) == 0)
   {
     uint8_t data = msg[3 + sizeof(uint64_t)];
     fname = (std::string(format.name, name_lenght) + "/" + std::to_string(data)).c_str();
